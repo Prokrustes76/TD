@@ -1,0 +1,126 @@
+<style> * {margin: 0; padding: 0} </style>
+
+<canvas id='C' width='800' height='600'> </canvas>
+
+<script src='button.js'></script>
+<script src='enemy.js'></script>
+<script src='unit.js'></script>
+<script src='game.js'></script>
+
+<script>
+
+let ctx, 
+    game, 
+    mouse   = {x: -5, y: -5},
+    clicked = false,
+    images  = [],
+    audios  = []
+
+document.addEventListener('mousemove', mousemove) 
+document.addEventListener('mousedown', click) 
+document.addEventListener('mouseup', unclick) 
+document.addEventListener('keydown', keyPressed)
+
+function mousemove(e) {
+  mouse.x = e.clientX
+  mouse.y = e.clientY
+}
+
+function click(e) {
+  if (game.placeUnit != undefined) {
+     if (Unit.check())
+       Unit.buy()
+    return
+  }
+
+  for (let u of game.units)
+    if (mouse.x > u.pos.x - u.pos.w/2 && mouse.x < u.pos.x + u.pos.w/2 &&
+        mouse.y > u.pos.y - u.pos.h/2 && mouse.y < u.pos.y + u.pos.h/2)
+     u.clicked()
+
+  for (let b of game.buttons)
+    if (mouse.x > b.pos.x && mouse.x < b.pos.x + b.pos.w &&
+        mouse.y > b.pos.y && mouse.y < b.pos.y + b.pos.h)
+     b.clicked()
+
+  
+  clicked = true
+}
+
+function unclick(e) {
+  clicked = false
+}
+
+function keyPressed(e) {
+  if (e.key == 'p')      game.paused = !game.paused
+  if (e.key == 'Escape') game.placeUnit = undefined
+}
+
+function write(text, x, y, size, col, align = 'center') {
+  ctx.font = `${size}px Arial`
+  ctx.fillStyle = col
+  ctx.textAlign = align
+  ctx.fillText(text, x, y)
+}
+
+function rect(x, y, w, h, col, isFilled = true) {
+  if (!isFilled) {
+    ctx.strokeStyle = col
+    ctx.strokeRect(x, y, w, h)
+  }
+  else {
+    ctx.fillStyle = col
+    ctx.fillRect(x, y, w, h)
+  }
+}
+
+function circle(x, y, size, col) {
+  ctx.fillStyle = col
+  ctx.beginPath()
+  ctx.arc(x, y, size, 2 * Math.PI, 0)
+  ctx.fill()
+}
+
+function loop() {
+  game.doStuff()
+
+  requestAnimationFrame(loop)
+}
+
+function loadStuff() {
+
+  for (let i = 0; i < 3; i++) {
+    images[i] = new Image()
+    images[i].src = `rsc/image${i}.png`
+  }
+   
+      let volumes = [.8, .4, 1]
+    for (let i = 0; i < 3; i++) {
+    audios[i] = new Audio()
+    audios[i].src = `rsc/audio${i}.wav`
+    audios[i].volume = volumes[i]
+  }  
+}
+
+function calcDist(a, b) {
+  return Math.hypot(a.pos.x - b.pos.x, a.pos.y - b.pos.y)
+}
+
+function error(text) {
+  audios[0].currentTime = 0
+  audios[0].play()
+  game.errorText = {text: text, time: game.timeTotal + 120}
+}
+
+window.onload = _=> {
+  ctx = document.getElementById('C').getContext('2d')
+  ctx.textBaseline = 'middle'
+
+  loadStuff()
+  game = new Game()
+  game.init()
+
+  loop()
+}
+
+</script>
